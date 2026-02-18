@@ -28,6 +28,8 @@ async def main():
     dp.message.middleware(RegisterMiddleware())
 
     # Register routers
+    from handlers import common
+    dp.include_router(common.router)
     from handlers import admin
     dp.include_router(admin.router)
     dp.include_router(submission.router)
