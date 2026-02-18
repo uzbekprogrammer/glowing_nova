@@ -31,6 +31,10 @@ async def main():
     from handlers import admin
     dp.include_router(admin.router)
     dp.include_router(submission.router)
+    
+    # Register fallback router LAST
+    from handlers import fallback
+    dp.include_router(fallback.router)
 
     # Initialize database
     logging.info("Initializing database...")
