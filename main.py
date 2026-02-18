@@ -23,22 +23,18 @@ async def main():
     bot = Bot(token=bot_token)
     dp = Dispatcher()
 
-    # Register Middlewares
     from middlewares.register import RegisterMiddleware
     dp.message.middleware(RegisterMiddleware())
 
-    # Register routers
     from handlers import common
     dp.include_router(common.router)
     from handlers import admin
     dp.include_router(admin.router)
     dp.include_router(submission.router)
     
-    # Register fallback router LAST
     from handlers import fallback
     dp.include_router(fallback.router)
 
-    # Initialize database
     logging.info("Initializing database...")
     await init_db()
     logging.info("Database initialized.")

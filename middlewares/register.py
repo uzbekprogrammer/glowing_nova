@@ -33,7 +33,6 @@ class RegisterMiddleware(BaseMiddleware):
                 session.add(new_user)
                 await session.commit()
             
-            # Break after one session usage as get_session is a generator
             break
 
         return await handler(event, data)

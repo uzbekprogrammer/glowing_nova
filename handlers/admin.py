@@ -22,6 +22,7 @@ def is_admin(user_id: int) -> bool:
 @router.message(Command("stat"))
 async def cmd_stat(message: types.Message):
     if not is_admin(message.from_user.id):
+        await message.reply("Kechirasiz, bu buyruq faqatgina adminlar uchun.")
         return
 
     async for session in get_session():
@@ -33,6 +34,7 @@ async def cmd_stat(message: types.Message):
 @router.message(Command("rek"))
 async def cmd_broadcast(message: types.Message, bot: Bot):
     if not is_admin(message.from_user.id):
+        await message.reply("Kechirasiz, bu buyruq faqatgina adminlar uchun.")
         return
 
     if not message.reply_to_message:
@@ -59,10 +61,8 @@ async def cmd_broadcast(message: types.Message, bot: Bot):
             )
             sent_count += 1
         except Exception as e:
-            # logging.error(f"Failed to send to {user_id}: {e}")
             failed_count += 1
         
-        # Avoid flood limits
         await asyncio.sleep(0.05)
 
     await status_msg.edit_text(

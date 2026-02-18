@@ -56,7 +56,6 @@ async def process_region_selection(callback: types.CallbackQuery, state: FSMCont
 @router.callback_query(SubmissionStates.waiting_for_district, F.data == "back_to_regions")
 async def back_to_regions(callback: types.CallbackQuery, state: FSMContext):
     await state.set_state(SubmissionStates.waiting_for_region)
-    # Re-show regions (logic similar to start but editing)
     builder = InlineKeyboardBuilder()
     for region in REGIONS.keys():
         builder.button(text=region, callback_data=f"region:{region}")
@@ -73,7 +72,6 @@ async def process_district_selection(callback: types.CallbackQuery, state: FSMCo
     data = await state.get_data()
     region_name = data.get("region")
     
-    # Validate
     if region_name not in REGIONS or district_name not in REGIONS[region_name]:
         await callback.answer("Noto'g'ri tuman tanlandi.", show_alert=True)
         return
@@ -98,7 +96,6 @@ async def process_file_upload(message: types.Message, state: FSMContext, bot: Bo
         await state.clear()
         return
 
-    # Determine file info
     if message.document:
         file_id = message.document.file_id
         original_name = message.document.file_name or "document"
@@ -113,22 +110,18 @@ async def process_file_upload(message: types.Message, state: FSMContext, bot: Bo
         await message.answer("Noma'lum fayl turi.")
         return
 
-    # Generate unique filename
     unique_name = f"{uuid.uuid4().hex}{file_ext}"
     
-    # Create directory structure
     save_dir = os.path.join("uploads", region, district)
     os.makedirs(save_dir, exist_ok=True)
     
     file_path = os.path.join(save_dir, unique_name)
     
     try:
-        # Download file
         file_obj = await bot.get_file(file_id)
         await bot.download_file(file_obj.file_path, file_path)
         
-        # Save to DB
-        async for session in get_session(): # Using the generator directly
+        async for session in get_session(): 
             new_submission = UserSubmission(
                 user_id=message.from_user.id,
                 region=region,
@@ -138,7 +131,23 @@ async def process_file_upload(message: types.Message, state: FSMContext, bot: Bo
             )
             session.add(new_submission)
             await session.commit()
-            break # Consume one session and break
+            break 
+
+        group_id = os.getenv("GROUP_ID")
+        if group_id:
+            try:
+                caption = (
+                    f"👤 <b>Foydalanuvchi:</b> {message.from_user.full_name}\n"
+                    f"📍 <b>Hudud:</b> {region}\n"
+                    f"🏢 <b>Tuman:</b> {district}\n"
+                    f"📁 <b>Fayl nomi:</b> {original_name}"
+                )
+                if message.document:
+                    await bot.send_document(chat_id=group_id, document=file_id, caption=caption, parse_mode="HTML")
+                elif message.photo:
+                    await bot.send_photo(chat_id=group_id, photo=file_id, caption=caption, parse_mode="HTML")
+            except Exception as e:
+                logging.error(f"Failed to forward to group: {e}")
 
         await message.answer(
             f"✅ Fayl qabul qilindi!\n\n"
